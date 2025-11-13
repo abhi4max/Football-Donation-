@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Donation App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      background-attachment: fixed;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      transition: box-shadow 0.5s ease-in-out;
+    }
+    .admin-active {
+      animation: pulseGlow 2s infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 10px 2px rgba(46,204,113,0.4); }
+      100% { box-shadow: 0 0 25px 6px rgba(46,204,113,0.8); }
+    }
+    .football {
+      display: inline-block;
+      color: #2c3e50;
+      cursor: pointer;
+      animation: bounce 2s infinite ease-in-out;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    input, select {
+      padding: 10px;
+      width: 90%;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #2ecc71;
+    }
+    .qr img {
+      margin-top: 15px;
+      width: 220px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      cursor: pointer;
+    }
+    .message {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .list {
+      margin-top: 20px;
+      text-align: left;
+    }
+    .donor {
+      background: #ecf9f1;
+      margin: 6px 0;
+      padding: 8px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .donor.pending {
+      background: #fff3cd;
+    }
+    .donor.verified {
+      background: #d4edda;
+    }
+    .progress-container {
+      margin-top: 15px;
+      background: #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 20px;
+    }
+    .progress-bar {
+      background: #27ae60;
+      height: 20px;
+      width: 0%;
+      color: white;
+      text-align: center;
+      font-size: 12px;
+      line-height: 20px;
+    }
+    .admin-panel {
+      display: none;
+      margin-top: 15px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+    .admin-controls button {
+      margin: 2px;
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+    /* --- QR Modal --- */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      position: relative;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      max-width: 90%;
+      text-align: center;
+      animation: fadeIn 0.3s ease;
+    }
+    .modal-content img {
+      width: 100%;
+      max-width: 300px;
+      border-radius: 10px;
+    }
+    .close {
+      position: absolute;
+      top: 5px;
+      right: 15px;
+      font-size: 30px;
+      color: #555;
+      cursor: pointer;
+    }
+    .download-btn {
+      display: inline-block;
+      margin-top: 10px;
+      background: #27ae60;
+      color: white;
+      text-decoration: none;
+      padding: 8px 15px;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .download-btn:hover {
+      background: #2ecc71;
+    }
+    @keyframes fadeIn {
+      from {opacity: 0; transform: scale(0.9);}
+      to {opacity: 1; transform: scale(1);}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="football">Contribute to Buy a Football ⚽</h2>
+    <p>Goal: ₹1300 | Minimum contribution: ₹100</p>
+
+    <div class="qr">
+      <img src="paytm.png" alt="Paytm QR Code" onclick="openQRModal()">
+      <p>Tap the QR to enlarge or download — then scan using Paytm / Google Pay / PhonePe or pay cash</p>
+    </div>
+
+    <!-- QR Popup Modal -->
+    <div id="qrModal" class="modal" onclick="outsideClose(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <span class="close" onclick="closeQRModal()">&times;</span>
+        <img id="qrImage" src="paytm.png" alt="QR Code Large">
+        <a id="downloadQR" href="paytm.png" download="Football_QR.png" class="download-btn">⬇️ Download QR</a>
+      </div>
+    </div>
+
+    <input type="text" id="name" placeholder="Enter your name" />
+    <input type="number" id="amount" placeholder="Enter amount in ₹" />
+    <select id="method">
+      <option value="UPI">Paid via UPI</option>
+      <option value="Cash">Paid in Cash</option>
+    </select>
+
+    <button onclick="donate()">Add Donation</button>
+    <p class="message" id="message"></p>
+
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+    <p>Total Collected: ₹<span id="total">0</span> / ₹1300</p>
+
+    <div class="list">
+      <h3>Contributors (<span id="count">0</span>)</h3>
+      <div id="donorList"></div>
+    </div>
+
+    <div class="admin-panel" id="adminPanel">
+      <h3>Admin Controls</h3>
+      <button onclick="clearAll()">Clear All Donors</button>
+    </div>
+  </div>
+
+  <script>
+    const goal = 1300;
+    const donors = JSON.parse(localStorage.getItem("donors")) || [];
+    let isAdmin = false;
+
+    function renderDonors() {
+      const list = document.getElementById("donorList");
+      const count = document.getElementById("count");
+      const total = document.getElementById("total");
+      const bar = document.getElementById("progressBar");
+
+      list.innerHTML = "";
+      let totalAmount = 0;
+
+      donors.forEach((donor, index) => {
+        totalAmount += parseInt(donor.amount);
+        const div = document.createElement("div");
+        div.className = `donor ${donor.status}`;
+        div.innerHTML = `
+          <span>${donor.name} - ₹${donor.amount} (${donor.method})</span>
+          ${isAdmin ? `
+          <div class="admin-controls">
+            <button onclick="verifyDonor(${index})">✔️</button>
+            <button onclick="editDonor(${index})">✏️</button>
+            <button onclick="deleteDonor(${index})">🗑️</button>
+          </div>` : ""}
+        `;
+        list.appendChild(div);
+      });
+
+      count.textContent = donors.length;
+      total.textContent = totalAmount;
+
+      const percent = Math.min((totalAmount / goal) * 100, 100);
+      bar.style.width = percent + "%";
+      bar.textContent = Math.floor(percent) + "%";
+    }
+
+    function donate() {
+      const name = document.getElementById("name").value.trim();
+      const amount = parseInt(document.getElementById("amount").value);
+      const method = document.getElementById("method").value;
+      const message = document.getElementById("message");
+
+      if (!name) {
+        message.style.color = "red";
+        message.textContent = "Please enter your name.";
+        return;
+      }
+      if (isNaN(amount) || amount < 100) {
+        message.style.color = "red";
+        message.textContent = "Minimum donation is ₹100.";
+        return;
+      }
+
+      donors.push({ name, amount, method, status: "pending" });
+      localStorage.setItem("donors", JSON.stringify(donors));
+
+      message.style.color = "green";
+      message.textContent = `Donation added. Waiting for admin verification.`;
+
+      document.getElementById("name").value = "";
+      document.getElementById("amount").value = "";
+
+      renderDonors();
+    }
+
+    function verifyDonor(index) {
+      donors[index].status = "verified";
+      localStorage.setItem("donors", JSON.stringify(donors));
+      renderDonors();
+    }
+
+    function editDonor(index) {
+      const newAmount = prompt("Enter new amount:", donors[index].amount);
+      if (newAmount && !isNaN(newAmount)) {
+        donors[index].amount = parseInt(newAmount);
+        localStorage.setItem("donors", JSON.stringify(donors));
+        renderDonors();
+      }
+    }
+
+    function deleteDonor(index) {
+      if (confirm("Delete this donor?")) {
+        donors.splice(index, 1);
+        localStorage.setItem("donors", JSON.stringify(donors));
+        renderDonors();
+      }
+    }
+
+    function clearAll() {
+      if (confirm("Clear all donor data?")) {
+        localStorage.removeItem("donors");
+        donors.length = 0;
+        renderDonors();
+      }
+    }
+
+    // --- QR Popup ---
+    function openQRModal() {
+      document.getElementById("qrModal").style.display = "flex";
+    }
+    function closeQRModal() {
+      document.getElementById("qrModal").style.display = "none";
+    }
+    function outsideClose(event) {
+      if (event.target.id === "qrModal") {
+        closeQRModal();
+      }
+    }
+
+    // === Hidden Admin Access (Long Press on ⚽) ===
+    const football = document.querySelector('.football');
+    let pressTimer;
+
+    football.addEventListener('mousedown', startPress);
+    football.addEventListener('touchstart', startPress);
+    football.addEventListener('mouseup', clearPress);
+    football.addEventListener('mouseleave', clearPress);
+    football.addEventListener('touchend', clearPress);
+
+    function startPress() {
+      pressTimer = setTimeout(() => {
+        const pass = prompt("Enter admin password:");
+        if (pass === "admin123") {
+          isAdmin = true;
+          document.getElementById("adminPanel").style.display = "block";
+          document.querySelector(".container").classList.add("admin-active");
+          alert("✅ Admin mode activated!");
+          renderDonors();
+        } else if (pass !== null) {
+          alert("❌ Incorrect password!");
+        }
+      }, 3000);
+    }
+
+    function clearPress() {
+      clearTimeout(pressTimer);
+    }
+
+    // Auto-hide admin mode + remove glow on reload
+    window.addEventListener("load", () => {
+      isAdmin = false;
+      document.getElementById("adminPanel").style.display = "none";
+      document.querySelector(".container").classList.remove("admin-active");
+      renderDonors();
+    });
+  </script>
+</body>
+</html>
